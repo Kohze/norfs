@@ -4,6 +4,9 @@ import React, { useState, useEffect } from 'react'
 import { notFound } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import dynamic from 'next/dynamic'
+import { Download } from 'lucide-react'
+import { Button } from '@/components/UI/button'
+import { Breadcrumb } from '@/components/UI/breadcrumb'
 
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false })
 const FeatureViewer = dynamic(() => import('feature-viewer'), { ssr: false })
@@ -15,7 +18,6 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
 
-// Function to get color class for amino acids
 const getAminoAcidColor = (aa) => {
   const colorMap = {
     'A': 'bg-blue-200', 'R': 'bg-red-200', 'N': 'bg-green-200', 'D': 'bg-yellow-200',
@@ -23,9 +25,9 @@ const getAminoAcidColor = (aa) => {
     'H': 'bg-orange-200', 'I': 'bg-teal-200', 'L': 'bg-cyan-200', 'K': 'bg-lime-200',
     'M': 'bg-amber-200', 'F': 'bg-emerald-200', 'P': 'bg-sky-200', 'S': 'bg-violet-200',
     'T': 'bg-fuchsia-200', 'W': 'bg-rose-200', 'Y': 'bg-slate-200', 'V': 'bg-stone-200'
-  };
-  return colorMap[aa.toUpperCase()] || 'bg-gray-100';
-};
+  }
+  return colorMap[aa.toUpperCase()] || 'bg-gray-100'
+}
 
 export default function NorfDetail({ params }) {
   const [norfData, setNorfData] = useState(null)
@@ -53,7 +55,6 @@ export default function NorfDetail({ params }) {
         })
         setSequence(data.AA_seq || '')
 
-        // Simulated conservation scores (replace with actual data fetching when available)
         setPhyloPScores(Array(100).fill(0).map(() => Math.random()))
         setPhastConsScores(Array(100).fill(0).map(() => Math.random()))
       } catch (err) {
@@ -79,29 +80,44 @@ export default function NorfDetail({ params }) {
           bubbleHelp: true,
           zoomMax: 10
         })
-
-      // Add features here if needed
-      // Example:
-      
-      // ft.addFeature({
-      //   data: [{x: 10, y: 20, description: 'Feature 1'}],
-      //   name: "Feature 1",
-      //   className: "feature1",
-      //   color: "#FF0000",
-      //   type: "rect"
-      // });
     }
   }, [sequence, norfData])
+
+  const handlePDBDownload = async () => {
+    try {
+      const response = await fetch(norfData.pdb_url)
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${norfData.gene_id}.pdb`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (err) {
+      console.error('Error downloading PDB file:', err)
+    }
+  }
 
   if (loading) return <div className="text-center py-24">Loading...</div>
   if (error) return <div className="text-center py-24 text-red-500">{error}</div>
   if (!norfData) return notFound()
 
+  const breadcrumbItems = [
+    { label: 'Database', href: '/' },
+    { label: `nORF ${norfData.gene_id}` }
+  ]
+
   return (
     <div className="bg-white py-24 sm:py-32">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="mx-auto max-w-3xl">
-          <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl mb-8">nORF Id: {norfData.gene_id}</h2>
+          <Breadcrumb items={breadcrumbItems} />
+          
+          <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl mb-8">
+            nORF Id: {norfData.gene_id}
+          </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -121,7 +137,20 @@ export default function NorfDetail({ params }) {
             </div>
             
             <div>
-              <h3 className="text-xl font-semibold mb-4">3D Structure</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold">3D Structure</h3>
+                {norfData.pdb_url && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePDBDownload}
+                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+                  >
+                    <Download className="h-4 w-4" />
+                    Download PDB
+                  </Button>
+                )}
+              </div>
               <div className="bg-gray-100 p-4 rounded-lg h-64 flex items-center justify-center">
                 {norfData.pdb_url ? (
                   <PDBViewer pdbUrl={norfData.pdb_url} />
@@ -132,28 +161,27 @@ export default function NorfDetail({ params }) {
             </div>
           </div>
 
-        
-
           <div className="mt-12">
             <h3 className="text-xl font-semibold mb-4">Sequence Information</h3>
             <div id="featureViewer"></div>
             <div className="bg-gray-50 p-4 rounded-lg overflow-x-auto mt-4">
               <div className="text-sm whitespace-pre-wrap">
                 {norfData.AA_seq.split('').reduce((acc, aa, index) => {
-                  const colorClass = getAminoAcidColor(aa);
+                  const colorClass = getAminoAcidColor(aa)
                   acc.push(
                     <span key={`aa-${index}`} className={`inline-block ${colorClass} w-6 h-6 text-center`}>
                       {aa}
                     </span>
-                  );
+                  )
                   if ((index + 1) % 50 === 0) {
-                    acc.push(<br key={`br-${index}`} />);
+                    acc.push(<br key={`br-${index}`} />)
                   }
-                  return acc;
+                  return acc
                 }, [])}
               </div>
             </div>
           </div>
+
           <div className="mt-12">
             <h3 className="text-xl font-semibold mb-4">Genome Browser</h3>
             <DallianceViewer norfData={norfData} />
@@ -172,7 +200,7 @@ export default function NorfDetail({ params }) {
                     title: { text: 'Position' },
                     labels: {
                       formatter: function(value) {
-                        return value % 5 === 0 ? value : '';
+                        return value % 5 === 0 ? value : ''
                       }
                     }
                   },
@@ -182,7 +210,7 @@ export default function NorfDetail({ params }) {
                     max: 1,
                     labels: {
                       formatter: function (val) {
-                        return val.toFixed(1);
+                        return val.toFixed(1)
                       }
                     }
                   },
@@ -190,7 +218,7 @@ export default function NorfDetail({ params }) {
                     position: 'top'
                   },
                   stroke: {
-                    width: 2 // Make the lines thinner
+                    width: 2
                   }
                 }}
                 series={[

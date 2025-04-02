@@ -1,10 +1,5 @@
-import { Hero, About, Features } from '../../components/Layout/home'
+import DatabaseView from '@/components/DatabaseView'
 
 export default function Home() {
-  return (
-    <div>
-      <Hero />
-      <Features />
-    </div>
-  )
+  return <DatabaseView />
 }
