@@ -1,4 +1,5 @@
 'use client'
+
 import { useEffect, useState, memo } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { Button } from '@/components/UI/button'
@@ -29,10 +30,16 @@ const GeneList = memo(function GeneList({ searchConfig, onGeneClick }) {
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(true)
   const [error, setError] = useState(null)
+  const [isClient, setIsClient] = useState(false)
   const ITEMS_PER_PAGE = 20
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   const fetchGenes = async (loadMore = false) => {
     try {
+      setError(null)
       let query = supabase
         .from('norfs')
         .select('*', { count: 'exact' })
@@ -73,9 +80,9 @@ const GeneList = memo(function GeneList({ searchConfig, onGeneClick }) {
         }
       }
 
-      const { data, error, count } = await query
+      const { data, error: fetchError, count } = await query
 
-      if (error) throw error
+      if (fetchError) throw fetchError
 
       setGenes(prev => loadMore ? [...prev, ...data] : data)
       setHasMore(count > (page + 1) * ITEMS_PER_PAGE)
@@ -89,15 +96,21 @@ const GeneList = memo(function GeneList({ searchConfig, onGeneClick }) {
   }
 
   useEffect(() => {
-    setPage(0)
-    setGenes([])
-    setLoading(true)
-    fetchGenes(false)
-  }, [filters, searchQuery, sortBy, sortOrder])
+    if (isClient) {
+      setPage(0)
+      setGenes([])
+      setLoading(true)
+      fetchGenes(false)
+    }
+  }, [filters, searchQuery, sortBy, sortOrder, isClient])
 
   const loadMore = () => {
     setPage(prev => prev + 1)
     fetchGenes(true)
+  }
+
+  if (!isClient) {
+    return <LoadingSkeleton />
   }
 
   if (error) {
@@ -118,72 +131,74 @@ const GeneList = memo(function GeneList({ searchConfig, onGeneClick }) {
   return (
     <div>
       <div className="bg-white shadow-md rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Gene ID
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Chromosome
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Start
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                End
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Length
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Feature
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Strand
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {loading && !genes.length ? (
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
               <tr>
-                <td colSpan="7">
-                  <LoadingSkeleton />
-                </td>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Gene ID
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Chromosome
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Start
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  End
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Length
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Feature
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Strand
+                </th>
               </tr>
-            ) : (
-              genes.map((gene) => (
-                <tr
-                  key={gene.id}
-                  onClick={() => onGeneClick(gene.gene_id)}
-                  className="hover:bg-gray-50 cursor-pointer"
-                >
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
-                    {gene.gene_id}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {gene.seqname}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {gene.start.toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {gene.end.toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {gene.sorf_length?.toLocaleString() || (gene.end - gene.start + 1).toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {gene.feature}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {gene.strand}
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {loading && !genes.length ? (
+                <tr>
+                  <td colSpan="7">
+                    <LoadingSkeleton />
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                genes.map((gene) => (
+                  <tr
+                    key={gene.id}
+                    onClick={() => onGeneClick(gene.gene_id)}
+                    className="hover:bg-gray-50 cursor-pointer"
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                      {gene.gene_id}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {gene.seqname}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {gene.start.toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {gene.end.toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {gene.sorf_length?.toLocaleString() || (gene.end - gene.start + 1).toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {gene.feature}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {gene.strand}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {hasMore && !loading && (

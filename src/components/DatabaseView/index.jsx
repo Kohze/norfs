@@ -1,5 +1,5 @@
 'use client'
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import FilterSidebar from './FilterSidebar'
@@ -27,7 +27,7 @@ const defaultState = {
 }
 
 export default function DatabaseView() {
-  // Initialize state with default values
+  const [showFilters, setShowFilters] = useState(false)
   const [state, setState] = useState(() => {
     if (typeof window !== 'undefined') {
       const savedState = localStorage.getItem(STORAGE_KEY)
@@ -45,10 +45,8 @@ export default function DatabaseView() {
 
   const router = useRouter()
 
-  // Destructure state for easier access
   const { filters, searchQuery, sortBy, sortOrder } = state
 
-  // Memoize state updates to prevent unnecessary re-renders
   const updateState = useCallback((updates) => {
     setState(prevState => {
       const newState = { ...prevState, ...updates }
@@ -61,6 +59,9 @@ export default function DatabaseView() {
 
   const handleFilterChange = useCallback((newFilters) => {
     updateState({ filters: newFilters })
+    if (window.innerWidth < 768) {
+      setShowFilters(false)
+    }
   }, [updateState])
 
   const handleSearchChange = useCallback((query) => {
@@ -68,19 +69,23 @@ export default function DatabaseView() {
   }, [updateState])
 
   const handleSortChange = useCallback((field) => {
-    updateState(prevState => ({
-      sortBy: field,
-      sortOrder: prevState.sortBy === field 
-        ? prevState.sortOrder === 'asc' ? 'desc' : 'asc'
-        : 'asc'
-    }))
-  }, [updateState])
+    setState(prevState => {
+      const newState = {
+        ...prevState,
+        sortBy: field,
+        sortOrder: prevState.sortBy === field && prevState.sortOrder === 'asc' ? 'desc' : 'asc'
+      }
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(newState))
+      }
+      return newState
+    })
+  }, [])
 
   const handleGeneClick = useCallback((geneId) => {
     router.push(`/id/${geneId}`)
   }, [router])
 
-  // Memoize the search configuration
   const searchConfig = useMemo(() => ({
     filters,
     searchQuery,
@@ -89,15 +94,40 @@ export default function DatabaseView() {
   }), [filters, searchQuery, sortBy, sortOrder])
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <FilterSidebar 
-        filters={filters} 
-        onFilterChange={handleFilterChange} 
-      />
-      <div className="flex-1 p-6">
+    <div className="flex flex-col md:flex-row min-h-screen bg-gray-50">
+      {/* Mobile Filter Toggle */}
+      <div className="md:hidden p-4 bg-white border-b">
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+        >
+          {showFilters ? 'Hide Filters' : 'Show Filters'}
+        </button>
+      </div>
+
+      {/* Filters Sidebar */}
+      <div className={`
+        ${showFilters ? 'block' : 'hidden'} 
+        md:block 
+        w-full 
+        md:w-64 
+        md:flex-shrink-0
+        border-b 
+        md:border-b-0
+        md:border-r 
+        border-gray-200
+      `}>
+        <FilterSidebar 
+          filters={filters} 
+          onFilterChange={handleFilterChange} 
+        />
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 p-4 md:p-6">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">nORFs Database</h1>
-          <p className="text-gray-600">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">nORFs Database</h1>
+          <p className="text-sm md:text-base text-gray-600">
             Explore novel open reading frames (nORFs) with advanced search and filtering capabilities
           </p>
         </div>

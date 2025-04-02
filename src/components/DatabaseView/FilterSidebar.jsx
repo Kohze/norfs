@@ -33,7 +33,7 @@ export default function FilterSidebar({ filters, onFilterChange }) {
   }
 
   return (
-    <div className="w-64 bg-white border-r border-gray-200 p-6">
+    <div className="sticky top-0 h-screen overflow-y-auto bg-white p-4 md:p-6">
       <h2 className="text-lg font-semibold text-gray-900 mb-6">Filters</h2>
       
       <div className="space-y-6">

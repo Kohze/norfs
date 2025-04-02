@@ -8,6 +8,7 @@ import { Download } from 'lucide-react'
 import { Button } from '@/components/UI/button'
 import { Breadcrumb } from '@/components/UI/breadcrumb'
 
+// Dynamic imports with ssr: false for client-side only components
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false })
 const FeatureViewer = dynamic(() => import('feature-viewer'), { ssr: false })
 const DallianceViewer = dynamic(() => import('./dalliance-viewer.js'), { ssr: false })
@@ -36,6 +37,11 @@ export default function NorfDetail({ params }) {
   const [sequence, setSequence] = useState('')
   const [phyloPScores, setPhyloPScores] = useState([])
   const [phastConsScores, setPhastConsScores] = useState([])
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   useEffect(() => {
     const fetchNorfDetails = async () => {
@@ -68,22 +74,8 @@ export default function NorfDetail({ params }) {
     fetchNorfDetails()
   }, [params.id])
 
-  useEffect(() => {
-    if (sequence && norfData && typeof FeatureViewer === 'function') {
-      const ft = new FeatureViewer(sequence,
-        '#featureViewer',
-        {
-          showAxis: true,
-          showSequence: true,
-          brushActive: true,
-          toolbar: true,
-          bubbleHelp: true,
-          zoomMax: 10
-        })
-    }
-  }, [sequence, norfData])
-
   const handlePDBDownload = async () => {
+    if (!isClient) return
     try {
       const response = await fetch(norfData.pdb_url)
       const blob = await response.blob()
@@ -139,7 +131,7 @@ export default function NorfDetail({ params }) {
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-semibold">3D Structure</h3>
-                {norfData.pdb_url && (
+                {norfData.pdb_url && isClient && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -152,7 +144,7 @@ export default function NorfDetail({ params }) {
                 )}
               </div>
               <div className="bg-gray-100 p-4 rounded-lg h-64 flex items-center justify-center">
-                {norfData.pdb_url ? (
+                {norfData.pdb_url && isClient ? (
                   <PDBViewer pdbUrl={norfData.pdb_url} />
                 ) : (
                   <p className="text-gray-600">Not available</p>
@@ -161,75 +153,79 @@ export default function NorfDetail({ params }) {
             </div>
           </div>
 
-          <div className="mt-12">
-            <h3 className="text-xl font-semibold mb-4">Sequence Information</h3>
-            <div id="featureViewer"></div>
-            <div className="bg-gray-50 p-4 rounded-lg overflow-x-auto mt-4">
-              <div className="text-sm whitespace-pre-wrap">
-                {norfData.AA_seq.split('').reduce((acc, aa, index) => {
-                  const colorClass = getAminoAcidColor(aa)
-                  acc.push(
-                    <span key={`aa-${index}`} className={`inline-block ${colorClass} w-6 h-6 text-center`}>
-                      {aa}
-                    </span>
-                  )
-                  if ((index + 1) % 50 === 0) {
-                    acc.push(<br key={`br-${index}`} />)
-                  }
-                  return acc
-                }, [])}
+          {isClient && (
+            <>
+              <div className="mt-12">
+                <h3 className="text-xl font-semibold mb-4">Sequence Information</h3>
+                <div id="featureViewer"></div>
+                <div className="bg-gray-50 p-4 rounded-lg overflow-x-auto mt-4">
+                  <div className="text-sm whitespace-pre-wrap">
+                    {norfData.AA_seq.split('').reduce((acc, aa, index) => {
+                      const colorClass = getAminoAcidColor(aa)
+                      acc.push(
+                        <span key={`aa-${index}`} className={`inline-block ${colorClass} w-6 h-6 text-center`}>
+                          {aa}
+                        </span>
+                      )
+                      if ((index + 1) % 50 === 0) {
+                        acc.push(<br key={`br-${index}`} />)
+                      }
+                      return acc
+                    }, [])}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
 
-          <div className="mt-12">
-            <h3 className="text-xl font-semibold mb-4">Genome Browser</h3>
-            <DallianceViewer norfData={norfData} />
-          </div>
-          
-          <div className="mt-12">
-            <h3 className="text-xl font-semibold mb-4">Conservation Scores</h3>
-            <div>
-              <Chart
-                options={{
-                  chart: {
-                    zoom: { enabled: false },
-                    toolbar: { show: false }
-                  },
-                  xaxis: {
-                    title: { text: 'Position' },
-                    labels: {
-                      formatter: function(value) {
-                        return value % 5 === 0 ? value : ''
+              <div className="mt-12">
+                <h3 className="text-xl font-semibold mb-4">Genome Browser</h3>
+                <DallianceViewer norfData={norfData} />
+              </div>
+              
+              <div className="mt-12">
+                <h3 className="text-xl font-semibold mb-4">Conservation Scores</h3>
+                <div>
+                  <Chart
+                    options={{
+                      chart: {
+                        zoom: { enabled: false },
+                        toolbar: { show: false }
+                      },
+                      xaxis: {
+                        title: { text: 'Position' },
+                        labels: {
+                          formatter: function(value) {
+                            return value % 5 === 0 ? value : ''
+                          }
+                        }
+                      },
+                      yaxis: { 
+                        title: { text: 'Score' },
+                        min: 0,
+                        max: 1,
+                        labels: {
+                          formatter: function (val) {
+                            return val.toFixed(1)
+                          }
+                        }
+                      },
+                      legend: {
+                        position: 'top'
+                      },
+                      stroke: {
+                        width: 2
                       }
-                    }
-                  },
-                  yaxis: { 
-                    title: { text: 'Score' },
-                    min: 0,
-                    max: 1,
-                    labels: {
-                      formatter: function (val) {
-                        return val.toFixed(1)
-                      }
-                    }
-                  },
-                  legend: {
-                    position: 'top'
-                  },
-                  stroke: {
-                    width: 2
-                  }
-                }}
-                series={[
-                  { name: "PhyloP score", data: phyloPScores },
-                  { name: "PhastCons score", data: phastConsScores }
-                ]}
-                type="line"
-                height={400}
-              />
-            </div>
-          </div>
+                    }}
+                    series={[
+                      { name: "PhyloP score", data: phyloPScores },
+                      { name: "PhastCons score", data: phastConsScores }
+                    ]}
+                    type="line"
+                    height={400}
+                  />
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

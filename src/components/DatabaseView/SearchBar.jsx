@@ -1,7 +1,7 @@
 'use client'
 import { Input } from '@/components/UI/input'
 import { Button } from '@/components/UI/button'
-import { Download, ChevronDown } from 'lucide-react'
+import { Download, ChevronDown, Filter } from 'lucide-react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { createClient } from '@supabase/supabase-js'
 
@@ -17,6 +17,8 @@ export default function SearchBar({ searchQuery, onSearchChange, sortBy, sortOrd
     { id: 'start', label: 'Start Position' },
     { id: 'end', label: 'End Position' },
   ]
+
+  const selectedField = sortFields.find(f => f.id === sortBy)
 
   const convertToCSV = (data) => {
     const headers = [
@@ -48,7 +50,6 @@ export default function SearchBar({ searchQuery, onSearchChange, sortBy, sortOrd
     try {
       let query = supabase.from('norfs').select('*')
 
-      // Apply search filter if exists
       if (searchQuery) {
         const isLocation = searchQuery.match(/^(chr)?(\w+):(\d+)-(\d+)$/i)
         if (isLocation) {
@@ -62,7 +63,6 @@ export default function SearchBar({ searchQuery, onSearchChange, sortBy, sortOrd
         }
       }
 
-      // Apply sorting
       query = query.order(sortBy, { ascending: sortOrder === 'asc' })
 
       const { data, error } = await query
@@ -87,7 +87,7 @@ export default function SearchBar({ searchQuery, onSearchChange, sortBy, sortOrd
 
   return (
     <div className="bg-white rounded-lg shadow p-4 mb-6">
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col md:flex-row gap-4">
         <div className="flex-1">
           <Input
             type="text"
@@ -97,15 +97,18 @@ export default function SearchBar({ searchQuery, onSearchChange, sortBy, sortOrd
             className="w-full"
           />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 md:items-center">
           <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild>
               <Button 
                 variant="outline" 
-                className="flex items-center gap-2 border border-gray-300 text-gray-700 hover:bg-gray-50"
+                className="flex items-center justify-center gap-2 border border-gray-300 text-gray-700 hover:bg-gray-50 w-full sm:w-auto"
               >
-                Sort by: {sortFields.find(f => f.id === sortBy)?.label}
-                <ChevronDown className="h-4 w-4" />
+                <span className="truncate">
+                  Sort: {selectedField?.label || 'Gene ID'}
+                  {sortOrder === 'desc' ? ' ↓' : ' ↑'}
+                </span>
+                <ChevronDown className="h-4 w-4 flex-shrink-0" />
               </Button>
             </DropdownMenu.Trigger>
 
@@ -126,7 +129,7 @@ export default function SearchBar({ searchQuery, onSearchChange, sortBy, sortOrd
                     {field.label}
                     {sortBy === field.id && (
                       <span className="ml-2 text-gray-500">
-                        ({sortOrder === 'asc' ? '↑' : '↓'})
+                        {sortOrder === 'asc' ? '↑' : '↓'}
                       </span>
                     )}
                   </DropdownMenu.Item>
@@ -138,10 +141,11 @@ export default function SearchBar({ searchQuery, onSearchChange, sortBy, sortOrd
           <Button
             onClick={handleDownload}
             variant="outline"
-            className="flex items-center gap-2 border border-gray-300 text-gray-700 hover:bg-gray-50"
+            className="flex items-center justify-center gap-2 border border-gray-300 text-gray-700 hover:bg-gray-50 w-full sm:w-auto"
           >
-            <Download className="h-4 w-4" />
-            Download CSV
+            <Download className="h-4 w-4 flex-shrink-0" />
+            <span className="hidden sm:inline">Download CSV</span>
+            <span className="sm:hidden">Download</span>
           </Button>
         </div>
       </div>

@@ -11,7 +11,7 @@ const nextConfig = {
           { key: 'Access-Control-Allow-Credentials', value: 'true' },
           {
             key: 'Access-Control-Allow-Origin',
-            value: 'https://flask-production-85d1.up.railway.app/',
+            value: '*',
           },
           {
             key: 'Access-Control-Allow-Methods',
@@ -20,7 +20,7 @@ const nextConfig = {
           {
             key: 'Access-Control-Allow-Headers',
             value:
-              'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version',
+              'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization',
           },
           {
             key: 'Cross-Origin-Opener-Policy',
