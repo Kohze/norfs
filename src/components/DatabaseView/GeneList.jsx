@@ -6,17 +6,35 @@ import { Button } from '@/components/UI/button'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
 )
 
 const LoadingSkeleton = () => (
   <div className="animate-pulse">
-    {[...Array(5)].map((_, i) => (
+    {[...Array(20)].map((_, i) => (
       <div key={i} className="border-b border-gray-200 py-4">
-        <div className="grid grid-cols-7 gap-4">
-          {[...Array(7)].map((_, j) => (
-            <div key={j} className="h-4 bg-gray-200 rounded"></div>
-          ))}
+        <div className="grid grid-cols-7 gap-4 items-center">
+          <div>
+            <div className="h-4 bg-gray-200 rounded w-11/12"></div>
+          </div>
+          <div>
+            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          </div>
+          <div>
+            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+          </div>
+          <div>
+            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+          </div>
+          <div>
+            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          </div>
+          <div>
+            <div className="h-4 bg-gray-200 rounded w-11/12"></div>
+          </div>
+          <div>
+            <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+          </div>
         </div>
       </div>
     ))}
@@ -84,7 +102,7 @@ const GeneList = memo(function GeneList({ searchConfig, onGeneClick }) {
 
       if (fetchError) throw fetchError
 
-      setGenes(prev => loadMore ? [...prev, ...data] : data)
+      setGenes((prev) => (loadMore ? [...prev, ...data] : data))
       setHasMore(count > (page + 1) * ITEMS_PER_PAGE)
       setError(null)
     } catch (error) {
@@ -105,7 +123,7 @@ const GeneList = memo(function GeneList({ searchConfig, onGeneClick }) {
   }, [filters, searchQuery, sortBy, sortOrder, isClient])
 
   const loadMore = () => {
-    setPage(prev => prev + 1)
+    setPage((prev) => prev + 1)
     fetchGenes(true)
   }
 
@@ -117,9 +135,9 @@ const GeneList = memo(function GeneList({ searchConfig, onGeneClick }) {
     return (
       <div className="text-center py-8 text-red-600">
         <p>{error}</p>
-        <Button 
-          onClick={() => fetchGenes(false)} 
-          variant="outline" 
+        <Button
+          onClick={() => fetchGenes(false)}
+          variant="outline"
           className="mt-4"
         >
           Try Again
@@ -185,7 +203,8 @@ const GeneList = memo(function GeneList({ searchConfig, onGeneClick }) {
                       {gene.end.toLocaleString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {gene.sorf_length?.toLocaleString() || (gene.end - gene.start + 1).toLocaleString()}
+                      {gene.sorf_length?.toLocaleString() ||
+                        (gene.end - gene.start + 1).toLocaleString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {gene.feature}

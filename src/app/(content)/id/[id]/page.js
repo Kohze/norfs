@@ -133,7 +133,7 @@ export default function NorfDetail({ params }) {
     ]
 
     return (
-      <div className="bg-white py-24 sm:py-32">
+      <div className="bg-white pt-8 pb-24 sm:pt-12 sm:pb-32">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="flex gap-8">
             <div className="flex-1 animate-pulse">
@@ -142,30 +142,22 @@ export default function NorfDetail({ params }) {
                   <HomeIconLucide className="h-4 w-4" />
                 </span>
                 <span className="flex items-center">
-                  <span className="h-4 w-4 mx-1 text-gray-400">
-                    {/* Chevron placeholder or actual SVG */}
-                  </span>
+                  <span className="h-4 w-4 mx-1 text-gray-400"></span>
                   <span>Home</span>
                 </span>
                 <span className="flex items-center">
-                  <span className="h-4 w-4 mx-1 text-gray-400">
-                    {/* Chevron placeholder or actual SVG */}
-                  </span>
+                  <span className="h-4 w-4 mx-1 text-gray-400"></span>
                   <span>Database</span>
                 </span>
                 <span className="flex items-center">
-                  <span className="h-4 w-4 mx-1 text-gray-400">
-                    {/* Chevron placeholder or actual SVG */}
-                  </span>
+                  <span className="h-4 w-4 mx-1 text-gray-400"></span>
                   <span className="inline-block h-4 bg-gray-200 rounded w-32 align-middle"></span>
                 </span>
               </div>
-
               <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl mb-8">
                 nORF Id:{' '}
                 <span className="inline-block h-10 bg-gray-300 rounded w-56 align-bottom"></span>
               </h2>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h3 className="text-xl font-semibold mb-4 text-gray-900">
@@ -200,17 +192,19 @@ export default function NorfDetail({ params }) {
                 </h3>
                 <div className="h-24 bg-gray-200 rounded w-full"></div>
               </div>
+
               <div className="mt-12">
                 <h3 className="text-xl font-semibold mb-4 text-gray-900">
                   Genome Browser
                 </h3>
-                <div className="h-64 bg-gray-200 rounded w-full"></div>
+                <div className="h-[422px] bg-white rounded w-full border border-gray-200"></div>
               </div>
+
               <div className="mt-12">
                 <h3 className="text-xl font-semibold mb-4 text-gray-900">
                   Conservation Scores
                 </h3>
-                <div className="h-64 bg-gray-200 rounded w-full"></div>
+                <div className="h-64 bg-white rounded w-full border border-gray-200"></div>
               </div>
             </div>
 
@@ -234,7 +228,7 @@ export default function NorfDetail({ params }) {
   ]
 
   return (
-    <div className="bg-white py-24 sm:py-32">
+    <div className="bg-white pt-8 pb-24 sm:pt-12 sm:pb-32">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="flex gap-8">
           <div className="flex-1">
@@ -328,7 +322,7 @@ export default function NorfDetail({ params }) {
                   </div>
                 </div>
 
-                <div className="mt-12">
+                <div className="mt-12 min-h-[422px]">
                   <h3 className="text-xl font-semibold mb-4">Genome Browser</h3>
                   <DallianceViewer norfData={norfData} />
                 </div>
