@@ -17,6 +17,33 @@ const PDBViewer = dynamic(
   },
 )
 
+// Skeleton component for individual nORF cards
+const NorfCardSkeleton = () => (
+  <div className="p-3 border rounded animate-pulse">
+    <div className="flex-1 mb-2">
+      {' '}
+      {/* Mimicking the text content area structure */}
+      <div className="h-5 bg-gray-300 rounded w-1/3 mb-2"></div>{' '}
+      {/* Gene ID (try 20px) */}
+      <div className="h-4 bg-gray-300 rounded w-3/4 mb-1"></div>{' '}
+      {/* Location (try 16px for text-sm) */}
+      <div className="h-4 bg-gray-300 rounded w-1/2 mb-2"></div>{' '}
+      {/* Feature (try 16px for text-sm) */}
+    </div>
+    {/* Placeholder for PDB viewer area, adjusted to match actual PDB height */}
+    <div className="mt-2">
+      {' '}
+      {/* This div has mt-2 (8px) */}
+      {/* The PDBViewer has height 240px. Its internal canvas has marginTop: 4px. 
+          So, the skeleton for the grey PDB area should be 240px high to match visually. 
+          The mt-2 above provides the 8px, and the internal 4px of PDBViewer are part of its own canvas bg. */}
+      <div className="h-[240px] bg-gray-300 rounded w-full"></div>{' '}
+      {/* PDB placeholder, matches 240px PDB height */}
+    </div>
+    {/* No similarity score placeholder needed as it's on the right and small */}
+  </div>
+)
+
 export default function SimilarNorfSidebar({ geneId }) {
   const [similarNorfs, setSimilarNorfs] = useState([])
   const [loading, setLoading] = useState(true)
@@ -178,10 +205,12 @@ export default function SimilarNorfSidebar({ geneId }) {
   if (loading) {
     return (
       <div className="p-4 bg-white rounded-lg shadow">
-        <h2 className="text-lg font-semibold mb-4">Similar nORFs</h2>
-        <div className="animate-pulse space-y-3">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-16 bg-gray-200 rounded"></div>
+        <h2 className="text-lg font-semibold mb-4">
+          {isFallback ? 'Next nORFs' : 'Similar nORFs'}
+        </h2>
+        <div className="space-y-3">
+          {[...Array(3)].map((_, i) => (
+            <NorfCardSkeleton key={i} />
           ))}
         </div>
       </div>
@@ -240,7 +269,7 @@ export default function SimilarNorfSidebar({ geneId }) {
                   </div>
                   <div className="text-sm text-gray-500">{norf.feature}</div>
                   {isFallback && norf.pdb_url && (
-                    <div className="mt-2">
+                    <div className="mt-2" onClick={(e) => e.stopPropagation()}>
                       <PDBViewer
                         pdbUrl={norf.pdb_url}
                         height="240px"
@@ -259,14 +288,21 @@ export default function SimilarNorfSidebar({ geneId }) {
           ))}
         </div>
       )}
-      {debugInfo && (
-        <div className="mt-4 p-3 bg-gray-100 rounded text-sm">
-          <h3 className="font-semibold mb-2">Debug Info:</h3>
-          <pre className="whitespace-pre-wrap">
-            {JSON.stringify(debugInfo, null, 2)}
-          </pre>
-        </div>
-      )}
+
+      {/* Condition now includes !loading to ensure debugInfo only considered after initial load */}
+      {!loading &&
+        similarNorfs.length > 0 &&
+        debugInfo &&
+        (debugInfo.message ||
+          debugInfo.error ||
+          debugInfo.resultsCount !== undefined) && (
+          <div className="mt-4 p-3 bg-gray-100 rounded text-sm">
+            <h3 className="font-semibold mb-2">Debug Info:</h3>
+            <pre className="whitespace-pre-wrap">
+              {JSON.stringify(debugInfo, null, 2)}
+            </pre>
+          </div>
+        )}
     </div>
   )
 }

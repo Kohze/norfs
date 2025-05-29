@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { notFound } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import dynamic from 'next/dynamic'
-import { Download } from 'lucide-react'
+import { Download, Home as HomeIconLucide } from 'lucide-react'
 import { Button } from '@/components/UI/button'
 import { Breadcrumb } from '@/components/UI/breadcrumb'
 import SimilarNorfSidebar from '@/components/SimilarNorfSidebar'
@@ -101,7 +101,7 @@ export default function NorfDetail({ params }) {
   }, [params.id])
 
   const handlePDBDownload = async () => {
-    if (!isClient) return
+    if (!isClient || !norfData?.pdb_url) return
     try {
       const response = await fetch(norfData.pdb_url)
       const blob = await response.blob()
@@ -118,13 +118,118 @@ export default function NorfDetail({ params }) {
     }
   }
 
-  if (loading) return <div className="text-center py-24">Loading...</div>
+  if (loading) {
+    const commonFields = [
+      { key: 'chr', staticLabel: 'chr' },
+      { key: 'source', staticLabel: 'source' },
+      { key: 'feature', staticLabel: 'feature' },
+      { key: 'start', staticLabel: 'start' },
+      { key: 'end', staticLabel: 'end' },
+      { key: 'score', staticLabel: 'score' },
+      { key: 'strand', staticLabel: 'strand' },
+      { key: 'frame', staticLabel: 'frame' },
+      { key: 'start_codon', staticLabel: 'start_codon' },
+      { key: 'sorf_length', staticLabel: 'sorf_length' },
+    ]
+
+    return (
+      <div className="bg-white py-24 sm:py-32">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="flex gap-8">
+            <div className="flex-1 animate-pulse">
+              <div className="flex items-center space-x-2 text-sm text-gray-600 mb-6">
+                <span className="flex items-center text-gray-600">
+                  <HomeIconLucide className="h-4 w-4" />
+                </span>
+                <span className="flex items-center">
+                  <span className="h-4 w-4 mx-1 text-gray-400">
+                    {/* Chevron placeholder or actual SVG */}
+                  </span>
+                  <span>Home</span>
+                </span>
+                <span className="flex items-center">
+                  <span className="h-4 w-4 mx-1 text-gray-400">
+                    {/* Chevron placeholder or actual SVG */}
+                  </span>
+                  <span>Database</span>
+                </span>
+                <span className="flex items-center">
+                  <span className="h-4 w-4 mx-1 text-gray-400">
+                    {/* Chevron placeholder or actual SVG */}
+                  </span>
+                  <span className="inline-block h-4 bg-gray-200 rounded w-32 align-middle"></span>
+                </span>
+              </div>
+
+              <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl mb-8">
+                nORF Id:{' '}
+                <span className="inline-block h-10 bg-gray-300 rounded w-56 align-bottom"></span>
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="text-xl font-semibold mb-4 text-gray-900">
+                    General Information
+                  </h3>
+                  <dl className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
+                    {commonFields.map((field) => (
+                      <React.Fragment key={field.key}>
+                        <dt className="text-sm font-medium text-gray-500">
+                          {field.staticLabel}
+                        </dt>
+                        <dd className="text-sm text-gray-900">
+                          <span className="inline-block h-4 bg-gray-200 rounded w-3/4"></span>
+                        </dd>
+                      </React.Fragment>
+                    ))}
+                  </dl>
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold mb-4 text-gray-900">
+                    3D Structure
+                  </h3>
+                  <div className="w-full mt-2">
+                    <div className="h-[240px] bg-gray-200 rounded w-full"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-12">
+                <h3 className="text-xl font-semibold mb-4 text-gray-900">
+                  Sequence Information
+                </h3>
+                <div className="h-24 bg-gray-200 rounded w-full"></div>
+              </div>
+              <div className="mt-12">
+                <h3 className="text-xl font-semibold mb-4 text-gray-900">
+                  Genome Browser
+                </h3>
+                <div className="h-64 bg-gray-200 rounded w-full"></div>
+              </div>
+              <div className="mt-12">
+                <h3 className="text-xl font-semibold mb-4 text-gray-900">
+                  Conservation Scores
+                </h3>
+                <div className="h-64 bg-gray-200 rounded w-full"></div>
+              </div>
+            </div>
+
+            <div className="hidden lg:block w-96">
+              <SimilarNorfSidebar geneId={params.id} />
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (error)
     return <div className="text-center py-24 text-red-500">{error}</div>
   if (!norfData) return notFound()
 
   const breadcrumbItems = [
-    { label: 'Database', href: '/' },
+    { label: 'Home', href: '/' },
+    { label: 'Database', href: '/database' },
     { label: `nORF ${norfData.gene_id}` },
   ]
 
@@ -134,11 +239,9 @@ export default function NorfDetail({ params }) {
         <div className="flex gap-8">
           <div className="flex-1">
             <Breadcrumb items={breadcrumbItems} />
-
             <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl mb-8">
               nORF Id: {norfData.gene_id}
             </h2>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <h3 className="text-xl font-semibold mb-4">
@@ -279,7 +382,7 @@ export default function NorfDetail({ params }) {
             )}
           </div>
 
-          <div className="hidden lg:block">
+          <div className="hidden lg:block w-96">
             <SimilarNorfSidebar geneId={params.id} />
           </div>
         </div>
