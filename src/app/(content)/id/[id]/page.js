@@ -195,6 +195,13 @@ export default function NorfDetail({ params }) {
 
               <div className="mt-12">
                 <h3 className="text-xl font-semibold mb-4 text-gray-900">
+                  Functional Map
+                </h3>
+                <div className="h-64 bg-gray-200 rounded w-full"></div>
+              </div>
+
+              <div className="mt-12">
+                <h3 className="text-xl font-semibold mb-4 text-gray-900">
                   Genome Browser
                 </h3>
                 <div className="h-[422px] bg-white rounded w-full border border-gray-200"></div>
@@ -319,6 +326,50 @@ export default function NorfDetail({ params }) {
                         return acc
                       }, [])}
                     </div>
+                  </div>
+                </div>
+
+                <div className="mt-12">
+                  <h3 className="text-xl font-semibold mb-4">
+                    Functional Map{' '}
+                    <span className="inline-flex items-center gap-2">
+                      <a
+                        href="https://deepmind.google.com/science/alphagenome/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-200 transition-colors cursor-pointer"
+                      >
+                        AlphaGenome
+                      </a>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200">
+                        experimental
+                      </span>
+                    </span>
+                  </h3>
+                  <div className="w-full mt-2">
+                    {isClient ? (
+                      <div className="bg-white p-4 rounded-lg">
+                        <img
+                          src={`https://norfs.s3.eu-west-2.amazonaws.com/pdb/${norfData.gene_id}_functional_map.svg`}
+                          alt={`Functional map for ${norfData.gene_id}`}
+                          className="w-full h-auto max-h-96 object-contain"
+                          onError={(e) => {
+                            e.target.style.display = 'none'
+                            e.target.nextSibling.style.display = 'block'
+                          }}
+                        />
+                        <p
+                          className="text-gray-600 p-4 text-center hidden"
+                          style={{ display: 'none' }}
+                        >
+                          Functional map is still being processed.
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-gray-600 p-4 text-center">
+                        Loading functional map...
+                      </p>
+                    )}
                   </div>
                 </div>
 
