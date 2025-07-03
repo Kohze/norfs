@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, memo } from 'react'
+import { useEffect, useState, memo, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { Button } from '@/components/UI/button'
 
@@ -55,14 +55,15 @@ const GeneList = memo(function GeneList({ searchConfig, onGeneClick }) {
     setIsClient(true)
   }, [])
 
-  const fetchGenes = async (loadMore = false) => {
+  const fetchGenes = useCallback(async (loadMore = false) => {
     try {
       setError(null)
+      const currentPage = loadMore ? page : 0
       let query = supabase
         .from('norfs')
         .select('*', { count: 'exact' })
         .order(sortBy, { ascending: sortOrder === 'asc' })
-        .range(page * ITEMS_PER_PAGE, (page + 1) * ITEMS_PER_PAGE - 1)
+        .range(currentPage * ITEMS_PER_PAGE, (currentPage + 1) * ITEMS_PER_PAGE - 1)
 
       // Apply filters
       if (filters.chromosome) {
@@ -103,7 +104,7 @@ const GeneList = memo(function GeneList({ searchConfig, onGeneClick }) {
       if (fetchError) throw fetchError
 
       setGenes((prev) => (loadMore ? [...prev, ...data] : data))
-      setHasMore(count > (page + 1) * ITEMS_PER_PAGE)
+      setHasMore(count > (currentPage + 1) * ITEMS_PER_PAGE)
       setError(null)
     } catch (error) {
       console.error('Error fetching genes:', error)
@@ -111,7 +112,7 @@ const GeneList = memo(function GeneList({ searchConfig, onGeneClick }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filters, searchQuery, sortBy, sortOrder, ITEMS_PER_PAGE])
 
   useEffect(() => {
     if (isClient) {
@@ -120,12 +121,18 @@ const GeneList = memo(function GeneList({ searchConfig, onGeneClick }) {
       setLoading(true)
       fetchGenes(false)
     }
-  }, [filters, searchQuery, sortBy, sortOrder, isClient])
+  }, [isClient, filters, searchQuery, sortBy, sortOrder])
 
-  const loadMore = () => {
-    setPage((prev) => prev + 1)
-    fetchGenes(true)
-  }
+  const loadMore = useCallback(() => {
+    setPage((prev) => {
+      const newPage = prev + 1
+      // Call fetchGenes with the new page
+      setTimeout(() => {
+        fetchGenes(true)
+      }, 0)
+      return newPage
+    })
+  }, [fetchGenes])
 
   if (!isClient) {
     return <LoadingSkeleton />
@@ -203,8 +210,7 @@ const GeneList = memo(function GeneList({ searchConfig, onGeneClick }) {
                       {gene.end.toLocaleString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {gene.sorf_length?.toLocaleString() ||
-                        (gene.end - gene.start + 1).toLocaleString()}
+                      {gene.sorf_length?.toLocaleString() || 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {gene.feature}
@@ -219,22 +225,16 @@ const GeneList = memo(function GeneList({ searchConfig, onGeneClick }) {
           </table>
         </div>
       </div>
-
-      {hasMore && !loading && (
-        <div className="mt-6 text-center">
+      
+      {hasMore && genes.length > 0 && (
+        <div className="mt-4 text-center">
           <Button
             onClick={loadMore}
             variant="outline"
-            className="text-gray-600 hover:text-gray-900"
+            disabled={loading}
           >
-            Load More
+            {loading ? 'Loading...' : 'Load More'}
           </Button>
-        </div>
-      )}
-
-      {loading && genes.length > 0 && (
-        <div className="mt-6 text-center">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
         </div>
       )}
     </div>

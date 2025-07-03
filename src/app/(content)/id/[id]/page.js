@@ -8,6 +8,7 @@ import { Download, Home as HomeIconLucide } from 'lucide-react'
 import { Button } from '@/components/UI/button'
 import { Breadcrumb } from '@/components/UI/breadcrumb'
 import SimilarNorfSidebar from '@/components/SimilarNorfSidebar'
+import HumanMineData from '@/components/HumanMineData'
 
 // Dynamic imports with ssr: false for client-side only components
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false })
@@ -212,6 +213,13 @@ export default function NorfDetail({ params }) {
                   Conservation Scores
                 </h3>
                 <div className="h-64 bg-white rounded w-full border border-gray-200"></div>
+              </div>
+
+              <div className="mt-12">
+                <h3 className="text-xl font-semibold mb-4 text-gray-900">
+                  Genomic Context (HumanMine)
+                </h3>
+                <div className="h-48 bg-gray-200 rounded w-full"></div>
               </div>
             </div>
 
@@ -422,6 +430,10 @@ export default function NorfDetail({ params }) {
                       height={400}
                     />
                   </div>
+                </div>
+
+                <div className="mt-12">
+                  <HumanMineData norf={norfData} />
                 </div>
               </>
             )}

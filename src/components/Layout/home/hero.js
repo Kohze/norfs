@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 
@@ -28,7 +28,7 @@ export function Hero() {
     return null;
   };
 
-  const fetchNorfEntries = async (offset = 0) => {
+  const fetchNorfEntries = useCallback(async (offset = 0) => {
     setError(null);
     try {
       let query = supabase
@@ -50,23 +50,29 @@ export function Hero() {
       const { data, error } = await query;
 
       if (error) throw error;
-      return data;
+      return data || [];
     } catch (err) {
       console.error('Error fetching nORF entries:', err);
       setError('Failed to fetch nORF entries. Please try again.');
       return [];
     }
-  };
+  }, [searchTerm]);
 
   useEffect(() => {
     const loadInitialEntries = async () => {
       setIsLoading(true);
-      const initialEntries = await fetchNorfEntries();
-      setNorfEntries(initialEntries);
-      setIsLoading(false);
+      try {
+        const initialEntries = await fetchNorfEntries();
+        setNorfEntries(initialEntries);
+      } catch (err) {
+        console.error('Error in loadInitialEntries:', err);
+        setError('Failed to load initial entries');
+      } finally {
+        setIsLoading(false);
+      }
     };
     loadInitialEntries();
-  }, [searchTerm]);
+  }, [fetchNorfEntries]);
 
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
@@ -74,9 +80,15 @@ export function Hero() {
 
   const loadMoreEntries = async () => {
     setIsLoadingMore(true);
-    const newEntries = await fetchNorfEntries(norfEntries.length);
-    setNorfEntries(prevEntries => [...prevEntries, ...newEntries]);
-    setIsLoadingMore(false);
+    try {
+      const newEntries = await fetchNorfEntries(norfEntries.length);
+      setNorfEntries(prevEntries => [...prevEntries, ...newEntries]);
+    } catch (err) {
+      console.error('Error loading more entries:', err);
+      setError('Failed to load more entries');
+    } finally {
+      setIsLoadingMore(false);
+    }
   };
 
   const handleEntryClick = (geneId) => {
@@ -115,7 +127,7 @@ export function Hero() {
                     className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
-                {error && <p className="text-center text-red-500">{error}</p>}
+                {error && <p className="text-center text-red-500 mb-4">{error}</p>}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {isLoading ? (
                     <>
@@ -123,7 +135,7 @@ export function Hero() {
                       <SkeletonCard />
                       <SkeletonCard />
                     </>
-                  ) : (
+                  ) : norfEntries.length > 0 ? (
                     norfEntries.map((entry) => (
                       <div 
                         key={entry.id} 
@@ -137,12 +149,16 @@ export function Hero() {
                         <p className="text-sm text-gray-600">Feature: {entry.feature}</p>
                       </div>
                     ))
+                  ) : (
+                    <div className="col-span-full text-center text-gray-500 py-8">
+                      {searchTerm ? 'No nORFs found matching your search.' : 'No nORFs available.'}
+                    </div>
                   )}
                 </div>
                 {norfEntries.length > 0 && (
                   <div className="mt-4 flex justify-center">
                     <button 
-                      className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-500 transition-colors duration-300"
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-500 transition-colors duration-300 disabled:bg-gray-400"
                       onClick={loadMoreEntries}
                       disabled={isLoadingMore}
                     >
