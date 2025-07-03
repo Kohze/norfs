@@ -9,19 +9,28 @@ const HumanMineData = ({ norf }) => {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    if (norf && norf.chr && norf.start && norf.end) {
+    console.log('HumanMineData useEffect triggered with norf:', norf)
+    console.log('norf.seqname:', norf?.seqname)
+    console.log('norf.start:', norf?.start)
+    console.log('norf.end:', norf?.end)
+    
+    if (norf && norf.seqname && norf.start && norf.end) {
+      console.log('All required fields present, calling fetchHumanMineData')
       fetchHumanMineData()
+    } else {
+      console.log('Missing required fields, not calling API')
     }
   }, [norf])
 
   const fetchHumanMineData = async () => {
+    console.log('fetchHumanMineData called!')
     setLoading(true)
     setError(null)
     setData(null)
 
     try {
       console.log('Fetching HumanMine data for nORF:', {
-        chromosome: norf.chr,
+        chromosome: norf.seqname,
         start: norf.start,
         end: norf.end
       })
@@ -30,7 +39,7 @@ const HumanMineData = ({ norf }) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          chromosome: norf.chr,
+          chromosome: norf.seqname,
           start: norf.start,
           end: norf.end
         }),
@@ -39,6 +48,10 @@ const HumanMineData = ({ norf }) => {
       const result = await response.json()
 
       console.log('Full HumanMine API response:', result)
+      console.log('Response status:', response.status)
+      console.log('Response ok:', response.ok)
+      console.log('Result type:', typeof result)
+      console.log('Result keys:', result ? Object.keys(result) : 'null/undefined')
 
       if (!response.ok) {
         throw new Error(result.error || `HTTP ${response.status}`)
@@ -54,7 +67,7 @@ const HumanMineData = ({ norf }) => {
     }
   }
 
-  if (!norf || !norf.chr || !norf.start || !norf.end) {
+  if (!norf || !norf.seqname || !norf.start || !norf.end) {
     return (
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
         <div className="flex items-center gap-2 text-gray-600 mb-2">
@@ -178,7 +191,7 @@ const HumanMineData = ({ norf }) => {
                       <div>
                         <span className="font-medium">Position:</span>
                         <span className="ml-1 font-mono">
-                          {gene.start?.toLocaleString()} - {gene.end?.toLocaleString()}
+                          {gene.start?.toLocaleString()}{gene.end ? ` - ${gene.end.toLocaleString()}` : ''}
                         </span>
                       </div>
                       <div>
@@ -186,7 +199,7 @@ const HumanMineData = ({ norf }) => {
                         <span className="ml-1 font-mono">
                           {Math.min(
                             Math.abs(gene.start - region.start),
-                            Math.abs(gene.end - region.end)
+                            gene.end ? Math.abs(gene.end - region.end) : Math.abs(gene.start - region.end)
                           ).toLocaleString()}bp
                         </span>
                       </div>
@@ -194,6 +207,12 @@ const HumanMineData = ({ norf }) => {
                         <span className="font-medium">Feature ID:</span>
                         <span className="ml-1 font-mono">{gene.featureId}</span>
                       </div>
+                      {gene.transcriptId && (
+                        <div>
+                          <span className="font-medium">Transcript:</span>
+                          <span className="ml-1 font-mono">{gene.transcriptId}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -228,7 +247,7 @@ const HumanMineData = ({ norf }) => {
                       <div>
                         <span className="font-medium">Position:</span>
                         <span className="ml-1 font-mono">
-                          {transcript.start?.toLocaleString()} - {transcript.end?.toLocaleString()}
+                          {transcript.start?.toLocaleString()}{transcript.end ? ` - ${transcript.end.toLocaleString()}` : ''}
                         </span>
                       </div>
                       <div>

@@ -37,7 +37,7 @@ export async function POST(request) {
       where: [
         {
           path: "Chromosome.locatedFeatures.feature",
-          type: "Gene"
+          type: "Exon"
         },
         {
           path: "Chromosome.organism.name",
@@ -182,41 +182,81 @@ export async function POST(request) {
     let transcriptData = []
 
     try {
-      geneData = await executeQuery(norfRegionQuery, 'Gene Region')
-      console.log(`Found ${geneData.length} genes in ±50000bp region`)
+      geneData = await executeQuery(norfRegionQuery, 'Exon Region')
+      console.log(`Found ${geneData.length} exons in ±50000bp region`)
+      console.log('Exon data type:', typeof geneData)
+      console.log('Exon data is array:', Array.isArray(geneData))
+      console.log('Exon data sample:', geneData.slice(0, 2))
     } catch (error) {
-      console.error('Gene region query failed:', error)
+      console.error('Exon region query failed:', error)
       // Continue with other queries
     }
 
     try {
       transcriptData = await executeQuery(transcriptQuery, 'Transcript Region')
       console.log(`Found ${transcriptData.length} transcripts in ±50000bp region`)
+      console.log('Transcript data type:', typeof transcriptData)
+      console.log('Transcript data is array:', Array.isArray(transcriptData))
+      console.log('Transcript data sample:', transcriptData.slice(0, 2))
     } catch (error) {
       console.error('Transcript region query failed:', error)
       // Continue with other queries
     }
 
-    // Process gene data - updated to match the new field structure
-    const processedGenes = geneData.map(gene => ({
-      primaryIdentifier: gene['Chromosome.locatedFeatures.feature.gene.primaryIdentifier'],
-      symbol: gene['Chromosome.locatedFeatures.feature.gene.symbol'],
-      name: gene['Chromosome.locatedFeatures.feature.gene.name'] || null,
-      chromosome: gene['Chromosome.primaryIdentifier'],
-      start: gene['Chromosome.locatedFeatures.start'],
-      end: gene['Chromosome.locatedFeatures.end'],
-      featureId: gene['Chromosome.locatedFeatures.feature.primaryIdentifier']
-    }))
+    // Process gene data - updated to handle exon response format
+    const processedGenes = (Array.isArray(geneData) ? geneData : []).map(row => {
+      // Handle both object format and array format
+      if (Array.isArray(row)) {
+        // Array format from exon query: [chromosome, start, exonId, geneId, geneSymbol, transcriptId, organism]
+        return {
+          primaryIdentifier: row[3], // Gene ID
+          symbol: row[4], // Gene Symbol
+          name: null, // Not available in this format
+          chromosome: row[0], // Chromosome
+          start: parseInt(row[1]), // Start position
+          end: null, // Not available in this format
+          featureId: row[2], // Exon ID
+          transcriptId: row[5] // Transcript ID
+        }
+      } else {
+        // Object format (fallback)
+        return {
+          primaryIdentifier: row['Chromosome.locatedFeatures.feature.gene.primaryIdentifier'],
+          symbol: row['Chromosome.locatedFeatures.feature.gene.symbol'],
+          name: row['Chromosome.locatedFeatures.feature.gene.name'] || null,
+          chromosome: row['Chromosome.primaryIdentifier'],
+          start: row['Chromosome.locatedFeatures.start'],
+          end: row['Chromosome.locatedFeatures.end'],
+          featureId: row['Chromosome.locatedFeatures.feature.primaryIdentifier']
+        }
+      }
+    })
 
-    // Process transcript data - updated to match the new field structure
-    const processedTranscripts = transcriptData.map(transcript => ({
-      primaryIdentifier: transcript['Chromosome.locatedFeatures.feature.primaryIdentifier'],
-      geneId: transcript['Chromosome.locatedFeatures.feature.gene.primaryIdentifier'],
-      geneSymbol: transcript['Chromosome.locatedFeatures.feature.gene.symbol'],
-      chromosome: transcript['Chromosome.primaryIdentifier'],
-      start: transcript['Chromosome.locatedFeatures.start'],
-      end: transcript['Chromosome.locatedFeatures.end']
-    }))
+    // Process transcript data - updated to handle tab-separated response format
+    const processedTranscripts = (Array.isArray(transcriptData) ? transcriptData : []).map(row => {
+      // Handle both object format and array format
+      if (Array.isArray(row)) {
+        // Array format: [chromosome, start, featureId, geneId, geneSymbol, organism]
+        return {
+          primaryIdentifier: row[2], // Feature ID (transcript ID)
+          geneId: row[3], // Gene ID
+          geneSymbol: row[4], // Gene Symbol
+          chromosome: row[0], // Chromosome
+          start: parseInt(row[1]), // Start position
+          end: null // Not available in this format
+        }
+      } else {
+        // Object format (fallback)
+        return {
+          primaryIdentifier: row['Chromosome.locatedFeatures.feature.primaryIdentifier'],
+          geneId: row['Chromosome.locatedFeatures.feature.gene.primaryIdentifier'],
+          geneSymbol: row['Chromosome.locatedFeatures.feature.gene.symbol'],
+          chromosome: row['Chromosome.primaryIdentifier'],
+          start: row['Chromosome.locatedFeatures.start'],
+          end: row['Chromosome.locatedFeatures.end']
+        }
+      }
+    })
 
     return NextResponse.json({
       genes: processedGenes,
