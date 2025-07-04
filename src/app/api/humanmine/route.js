@@ -27,7 +27,7 @@ export async function POST(request) {
       token: 'G1v997Ddt2K8Mf7792k3' // Adding token from working example
     })
 
-    // Calculate ±50000bp region around the nORF
+    // Calculate ±50kb region around the nORF
     const regionStart = Math.max(1, parseInt(start) - 50000)
     const regionEnd = parseInt(end) + 50000
 
@@ -89,71 +89,6 @@ export async function POST(request) {
       constraintLogic: "A and B and C and D"
     }
 
-    // Alternative query for transcripts in the region
-    const transcriptQuery = {
-      description: "For a specified organism and chromosomal location show all transcripts",
-      where: [
-        {
-          path: "Chromosome.locatedFeatures.feature",
-          type: "Transcript"
-        },
-        {
-          path: "Chromosome.organism.name",
-          op: "=",
-          code: "D",
-          value: "Homo sapiens"
-        },
-        {
-          path: "Chromosome.primaryIdentifier",
-          op: "=",
-          code: "A",
-          value: normalizedChromosome
-        },
-        {
-          path: "Chromosome.locatedFeatures.start",
-          op: ">=",
-          code: "C",
-          value: regionStart.toString()
-        },
-        {
-          path: "Chromosome.locatedFeatures.end",
-          op: "<=",
-          code: "B",
-          value: regionEnd.toString()
-        }
-      ],
-      name: "ChromRegion_Transcripts",
-      title: "Chromosomal Location --> All Transcripts",
-      from: "Chromosome",
-      select: [
-        "Chromosome.primaryIdentifier",
-        "Chromosome.locatedFeatures.start",
-        "Chromosome.locatedFeatures.feature.primaryIdentifier",
-        "Chromosome.locatedFeatures.feature.gene.primaryIdentifier",
-        "Chromosome.locatedFeatures.feature.gene.symbol",
-        "Chromosome.organism.name"
-      ],
-      sortOrder: [
-        {
-          path: "Chromosome.primaryIdentifier",
-          direction: "ASC"
-        },
-        {
-          path: "Chromosome.primaryIdentifier",
-          direction: "ASC"
-        }
-      ],
-      constraintLogic: "A and B and C and D"
-    }
-
-    console.log('HumanMine query params:', { 
-      normalizedChromosome, 
-      start: parseInt(start), 
-      end: parseInt(end),
-      regionStart,
-      regionEnd
-    })
-
     // Execute queries with timeout and better error handling
     const timeout = 30000 // 30 seconds timeout
     
@@ -163,44 +98,39 @@ export async function POST(request) {
           reject(new Error(`${queryName} query timed out after ${timeout}ms`))
         }, timeout)
 
-        service.records(query, 
-          (res) => {
-            clearTimeout(timeoutId)
-            resolve(res || [])
-          }, 
-          (err) => {
-            clearTimeout(timeoutId)
-            console.error(`${queryName} query error:`, err)
-            reject(new Error(`${queryName} query failed: ${err.message || 'Unknown error'}`))
-          }
-        )
+        // Use the exact method from the working example
+        service.records(query, (res) => {
+          clearTimeout(timeoutId)
+          console.log(`${queryName} raw response:`, res)
+          resolve(res || [])
+        }, (err) => {
+          clearTimeout(timeoutId)
+          console.error(`${queryName} query error:`, err)
+          reject(new Error(`${queryName} query failed: ${err.message || 'Unknown error'}`))
+        })
       })
     }
 
-    // Execute queries sequentially
+    // Execute only the exon query (simplified)
     let geneData = []
-    let transcriptData = []
 
     try {
+      console.log('Executing exon query with params:', {
+        chromosome: normalizedChromosome,
+        regionStart,
+        regionEnd
+      })
+      
       geneData = await executeQuery(norfRegionQuery, 'Exon Region')
       console.log(`Found ${geneData.length} exons in ±50000bp region`)
       console.log('Exon data type:', typeof geneData)
       console.log('Exon data is array:', Array.isArray(geneData))
       console.log('Exon data sample:', geneData.slice(0, 2))
+      console.log('Full exon query sent:', JSON.stringify(norfRegionQuery, null, 2))
     } catch (error) {
       console.error('Exon region query failed:', error)
-      // Continue with other queries
-    }
-
-    try {
-      transcriptData = await executeQuery(transcriptQuery, 'Transcript Region')
-      console.log(`Found ${transcriptData.length} transcripts in ±50000bp region`)
-      console.log('Transcript data type:', typeof transcriptData)
-      console.log('Transcript data is array:', Array.isArray(transcriptData))
-      console.log('Transcript data sample:', transcriptData.slice(0, 2))
-    } catch (error) {
-      console.error('Transcript region query failed:', error)
-      // Continue with other queries
+      console.error('Query that failed:', JSON.stringify(norfRegionQuery, null, 2))
+      geneData = [] // Set empty array on error
     }
 
     // Process gene data - updated to handle exon response format
@@ -232,35 +162,9 @@ export async function POST(request) {
       }
     })
 
-    // Process transcript data - updated to handle tab-separated response format
-    const processedTranscripts = (Array.isArray(transcriptData) ? transcriptData : []).map(row => {
-      // Handle both object format and array format
-      if (Array.isArray(row)) {
-        // Array format: [chromosome, start, featureId, geneId, geneSymbol, organism]
-        return {
-          primaryIdentifier: row[2], // Feature ID (transcript ID)
-          geneId: row[3], // Gene ID
-          geneSymbol: row[4], // Gene Symbol
-          chromosome: row[0], // Chromosome
-          start: parseInt(row[1]), // Start position
-          end: null // Not available in this format
-        }
-      } else {
-        // Object format (fallback)
-        return {
-          primaryIdentifier: row['Chromosome.locatedFeatures.feature.primaryIdentifier'],
-          geneId: row['Chromosome.locatedFeatures.feature.gene.primaryIdentifier'],
-          geneSymbol: row['Chromosome.locatedFeatures.feature.gene.symbol'],
-          chromosome: row['Chromosome.primaryIdentifier'],
-          start: row['Chromosome.locatedFeatures.start'],
-          end: row['Chromosome.locatedFeatures.end']
-        }
-      }
-    })
-
     return NextResponse.json({
       genes: processedGenes,
-      transcripts: processedTranscripts,
+      transcripts: [], // Simplified - no separate transcript query
       region: { 
         chromosome: normalizedChromosome, 
         start: parseInt(start), 

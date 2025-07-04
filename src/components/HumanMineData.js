@@ -91,7 +91,7 @@ const HumanMineData = ({ norf }) => {
           <span className="text-xs text-blue-600 ml-auto">via HumanMine.org</span>
         </div>
         <p className="text-blue-600 text-sm">
-          Searching for genes and transcripts in ±50000bp region around nORF...
+          Searching for genes and transcripts in ±50kb region around nORF...
         </p>
       </div>
     )
@@ -158,7 +158,7 @@ const HumanMineData = ({ norf }) => {
           </div>
           <div>
             <span className="text-gray-600">Search Range:</span>
-            <span className="ml-2 font-mono">±50000bp</span>
+            <span className="ml-2 font-mono">±50kb</span>
           </div>
         </div>
       </div>
@@ -276,7 +276,7 @@ const HumanMineData = ({ norf }) => {
             <span className="text-xs text-yellow-600 ml-auto">via HumanMine.org</span>
           </div>
           <p className="text-yellow-600 text-sm">
-            No known genes or transcripts were found in the ±50000bp region around this nORF.
+            No known genes or transcripts were found in the ±50kb region around this nORF.
             This could indicate a novel genomic region or the nORF may be in an intergenic area.
           </p>
         </div>
@@ -294,7 +294,7 @@ const HumanMineData = ({ norf }) => {
           >
             HumanMine
           </a>
-          {' '}using InterMine web services. Search region: ±50000bp around nORF coordinates.
+          {' '}using InterMine web services. Search region: ±50kb around nORF coordinates.
         </p>
       </div>
     </div>
