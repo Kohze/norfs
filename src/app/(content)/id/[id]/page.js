@@ -2,13 +2,13 @@
 
 import React, { useState, useEffect } from 'react'
 import { notFound } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
 import dynamic from 'next/dynamic'
 import { Download, Home as HomeIconLucide } from 'lucide-react'
 import { Button } from '@/components/UI/button'
 import { Breadcrumb } from '@/components/UI/breadcrumb'
 import SimilarNorfSidebar from '@/components/SimilarNorfSidebar'
 import HumanMineData from '@/components/HumanMineData'
+import supabase from '@/supabase/app'
 
 // Dynamic imports with ssr: false for client-side only components
 const Chart = dynamic(() => import('react-apexcharts'), { ssr: false })
@@ -17,11 +17,6 @@ const DallianceViewer = dynamic(() => import('./dalliance-viewer.js'), {
   ssr: false,
 })
 const PDBViewer = dynamic(() => import('./PDBViewer.js'), { ssr: false })
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-)
 
 const getAminoAcidColor = (aa) => {
   const colorMap = {
@@ -318,7 +313,7 @@ export default function NorfDetail({ params }) {
                   <div id="featureViewer"></div>
                   <div className="bg-gray-50 p-4 rounded-lg overflow-x-auto mt-4">
                     <div className="text-sm whitespace-pre-wrap">
-                      {norfData.AA_seq.split('').reduce((acc, aa, index) => {
+                      {(norfData.AA_seq || '').split('').reduce((acc, aa, index) => {
                         const colorClass = getAminoAcidColor(aa)
                         acc.push(
                           <span
