@@ -22,25 +22,14 @@ const NorfCardSkeleton = () => (
   <div className="p-3 border rounded animate-pulse">
     <div className="flex-1 mb-2">
       {' '}
-      {/* Mimicking the text content area structure */}
       <div className="h-5 bg-gray-300 rounded w-1/3 mb-2"></div>{' '}
-      {/* Gene ID (try 20px) */}
       <div className="h-4 bg-gray-300 rounded w-3/4 mb-1"></div>{' '}
-      {/* Location (try 16px for text-sm) */}
       <div className="h-4 bg-gray-300 rounded w-1/2 mb-2"></div>{' '}
-      {/* Feature (try 16px for text-sm) */}
     </div>
-    {/* Placeholder for PDB viewer area, adjusted to match actual PDB height */}
     <div className="mt-2">
       {' '}
-      {/* This div has mt-2 (8px) */}
-      {/* The PDBViewer has height 240px. Its internal canvas has marginTop: 4px. 
-          So, the skeleton for the grey PDB area should be 240px high to match visually. 
-          The mt-2 above provides the 8px, and the internal 4px of PDBViewer are part of its own canvas bg. */}
       <div className="h-[240px] bg-gray-300 rounded w-full"></div>{' '}
-      {/* PDB placeholder, matches 240px PDB height */}
     </div>
-    {/* No similarity score placeholder needed as it's on the right and small */}
   </div>
 )
 
@@ -49,7 +38,6 @@ export default function SimilarNorfSidebar({ geneId }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [debugInfo, setDebugInfo] = useState(null)
-  const [isFallback, setIsFallback] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -58,124 +46,43 @@ export default function SimilarNorfSidebar({ geneId }) {
         setLoading(true)
         setError(null)
         setDebugInfo(null)
-        setIsFallback(false)
 
-        let featureVector = null
-        try {
-          const { data: testQuery, error: testError } = await supabase
-            .from('norf_features')
-            .select('gene_id, feature_vector')
-            .eq('gene_id', geneId)
-            .single()
+        const { data: fallbackNorfs, error: fallbackError } = await supabase
+          .from('norfs')
+          .select('gene_id, seqname, start, end, strand, feature')
+          .gt('gene_id', geneId)
+          .order('gene_id', { ascending: true })
+          .limit(5)
 
-          if (testError) {
-            console.error('Error fetching feature vector:', testError.message)
-          }
-          if (testQuery?.feature_vector) {
-            featureVector = testQuery.feature_vector
-          } else if (!testError) {
-            console.warn(
-              'No feature vector found for this nORF, attempting fallback.',
-            )
-          }
-        } catch (e) {
-          console.error('Exception during feature vector fetch:', e)
+        if (fallbackError) {
+          console.error('Error fetching nORFs:', fallbackError)
+          throw new Error(
+            `Failed to fetch nORFs: ${fallbackError.message}`,
+          )
         }
 
-        let similarResults = []
-        let similarityError = null
-
-        if (featureVector) {
-          const { data, error: rpcError } = await supabase.rpc(
-            'find_similar_norfs_raw',
-            {
-              p_target_vector: featureVector,
-              p_exclude_gene_id: geneId,
-              p_similarity_threshold: 0.2,
-              p_limit: 10,
-            },
-          )
-          similarResults = data
-          similarityError = rpcError
-        }
-
-        if (
-          similarityError ||
-          (!similarResults?.length && featureVector) ||
-          !featureVector
-        ) {
-          if (similarityError) {
-            console.warn(
-              'Vector search failed, attempting fallback:',
-              similarityError.message,
-            )
-          } else if (!similarResults?.length && featureVector) {
-            console.warn(
-              'Vector search returned no results, attempting fallback.',
-            )
-          } else if (!featureVector) {
-            console.warn(
-              'No feature vector for vector search, attempting fallback directly.',
-            )
-          }
-
-          setIsFallback(true)
-          const { data: fallbackNorfs, error: fallbackError } = await supabase
-            .from('norfs')
-            .select('gene_id, seqname, start, end, strand, feature')
-            .gt('gene_id', geneId)
-            .order('gene_id', { ascending: true })
-            .limit(5)
-
-          if (fallbackError) {
-            console.error('Error fetching fallback nORFs:', fallbackError)
-            throw new Error(
-              `Failed to fetch fallback nORFs: ${fallbackError.message}`,
-            )
-          }
-
-          if (!fallbackNorfs?.length) {
-            setSimilarNorfs([])
-            setDebugInfo((prev) => ({
-              ...prev,
-              message: 'No similar nORFs or fallback nORFs found',
-              resultsCount: 0,
-            }))
-            return
-          }
-
-          setSimilarNorfs(
-            fallbackNorfs.map((n) => ({
-              ...n,
-              similarity: null,
-              pdb_url: `https://norfs.s3.eu-west-2.amazonaws.com/pdb/${n.gene_id}.pdb`,
-            })),
-          )
+        if (!fallbackNorfs?.length) {
+          setSimilarNorfs([])
           setDebugInfo((prev) => ({
             ...prev,
-            message: 'Showing fallback nORFs (next 5 in DB)',
-            resultsCount: fallbackNorfs.length,
+            message: 'No nORFs found',
+            resultsCount: 0,
           }))
-        } else {
-          setSimilarNorfs(similarResults)
-          setDebugInfo((prev) => ({
-            ...prev,
-            message: 'Showing similar nORFs based on vector search',
-            resultsCount: similarResults.length,
-            similarityRange: {
-              min: Math.min(
-                ...similarResults
-                  .map((r) => r.similarity)
-                  .filter((s) => s !== null && s !== undefined),
-              ),
-              max: Math.max(
-                ...similarResults
-                  .map((r) => r.similarity)
-                  .filter((s) => s !== null && s !== undefined),
-              ),
-            },
-          }))
+          return
         }
+
+        setSimilarNorfs(
+          fallbackNorfs.map((n) => ({
+            ...n,
+            similarity: null,
+            pdb_url: `https://norfs.s3.eu-west-2.amazonaws.com/pdb/${n.gene_id}.pdb`,
+          })),
+        )
+        setDebugInfo((prev) => ({
+          ...prev,
+          message: 'Showing next 5 nORFs in DB',
+          resultsCount: fallbackNorfs.length,
+        }))
       } catch (err) {
         console.error('Error in fetchSimilarNorfs:', err)
         setError(err.message)
@@ -194,20 +101,10 @@ export default function SimilarNorfSidebar({ geneId }) {
     }
   }, [geneId])
 
-  const handleRetry = () => {
-    setError(null)
-    setDebugInfo(null)
-    if (geneId) {
-      fetchSimilarNorfs()
-    }
-  }
-
   if (loading) {
     return (
       <div className="p-4 bg-white rounded-lg shadow">
-        <h2 className="text-lg font-semibold mb-4">
-          {isFallback ? 'Next nORFs' : 'Similar nORFs'}
-        </h2>
+        <h2 className="text-lg font-semibold mb-4">Next nORFs</h2>
         <div className="space-y-3">
           {[...Array(3)].map((_, i) => (
             <NorfCardSkeleton key={i} />
@@ -220,16 +117,8 @@ export default function SimilarNorfSidebar({ geneId }) {
   if (error) {
     return (
       <div className="p-4 bg-white rounded-lg shadow">
-        <h2 className="text-lg font-semibold mb-4">
-          {isFallback ? 'Next nORFs' : 'Similar nORFs'}
-        </h2>
+        <h2 className="text-lg font-semibold mb-4">Next nORFs</h2>
         <div className="text-red-600 mb-4">{error}</div>
-        <button
-          onClick={handleRetry}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-        >
-          Retry
-        </button>
         {debugInfo && (
           <div className="mt-4 p-3 bg-gray-100 rounded text-sm">
             <h3 className="font-semibold mb-2">Debug Info:</h3>
@@ -244,15 +133,9 @@ export default function SimilarNorfSidebar({ geneId }) {
 
   return (
     <div className="p-4 bg-white rounded-lg shadow">
-      <h2 className="text-lg font-semibold mb-4">
-        {isFallback ? 'Next nORFs' : 'Similar nORFs'}
-      </h2>
+      <h2 className="text-lg font-semibold mb-4">Next nORFs</h2>
       {similarNorfs.length === 0 ? (
-        <div className="text-gray-500">
-          {isFallback
-            ? 'No subsequent nORFs found.'
-            : 'No similar nORFs found.'}
-        </div>
+        <div className="text-gray-500">No subsequent nORFs found.</div>
       ) : (
         <div className="space-y-3">
           {similarNorfs.map((norf) => (
@@ -268,7 +151,7 @@ export default function SimilarNorfSidebar({ geneId }) {
                     {norf.seqname}:{norf.start}-{norf.end} ({norf.strand})
                   </div>
                   <div className="text-sm text-gray-500">{norf.feature}</div>
-                  {isFallback && norf.pdb_url && (
+                  {norf.pdb_url && (
                     <div className="mt-2" onClick={(e) => e.stopPropagation()}>
                       <PDBViewer
                         pdbUrl={norf.pdb_url}
@@ -278,18 +161,12 @@ export default function SimilarNorfSidebar({ geneId }) {
                     </div>
                   )}
                 </div>
-                <div className="text-sm font-medium text-blue-600">
-                  {norf.similarity !== null
-                    ? `${(norf.similarity * 100).toFixed(1)}%`
-                    : ''}
-                </div>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Condition now includes !loading to ensure debugInfo only considered after initial load */}
       {!loading &&
         similarNorfs.length > 0 &&
         debugInfo &&

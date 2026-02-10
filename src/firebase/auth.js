@@ -23,8 +23,6 @@ import {
 import { firebase } from '@/firebase/app'
 import { createUserDocument } from '@/utils/createUserCollection'
 import { getCurrentUserData } from '@/firebase/firestore'
-import { getUserCurrentPlan } from '@/utils/stripe'
-
 const formatAuthUser = (user) => ({
   uid: user.uid,
   email: user.email,
@@ -32,7 +30,6 @@ const formatAuthUser = (user) => ({
   name: user.displayName,
   firstName: user.firstName,
   lastName: user.lastName,
-  userSubscription: user?.userSubscription ? user.userSubscription : null,
 })
 let auth
 if (firebase) {
@@ -54,11 +51,9 @@ export const useFirebaseAuth = () => {
 
     setIsLoading(true)
     let userData = await getCurrentUserData(authState.uid)
-    let userSubscription = await getUserCurrentPlan(authState.uid)
     const formattedUser = formatAuthUser({
       ...authState,
       ...userData,
-      userSubscription,
     })
     setAuthUser(formattedUser)
     setIsLoading(false)

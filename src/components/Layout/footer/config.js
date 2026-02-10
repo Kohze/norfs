@@ -6,7 +6,6 @@ export const navigation = {
     { name: 'Insights', href: '#' },
   ],
   support: [
-    { name: 'Pricing', href: '#' },
     { name: 'Documentation', href: '#' },
     { name: 'Guides', href: '#' },
     { name: 'API Status', href: '#' },
