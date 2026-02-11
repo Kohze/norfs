@@ -69,11 +69,13 @@ export default function NorfDetail({ params }) {
         if (error) throw error
         if (!data) notFound()
 
+        const aaSeq = data.AA_seq || data.aa_seq || ''
         setNorfData({
           ...data,
+          AA_seq: aaSeq,
           pdb_url: `https://norfs.s3.eu-west-2.amazonaws.com/pdb/${data.gene_id}.pdb`,
         })
-        setSequence(data.AA_seq || '')
+        setSequence(aaSeq)
 
         setPhyloPScores(
           Array(100)
