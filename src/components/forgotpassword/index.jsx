@@ -14,13 +14,13 @@ export default function ForgotPasswordComponent() {
   const [isLoading, setIsLoading] = useState(false)
   const [email, setEmail] = useState('')
   const { toast } = useToast()
-  const { resetPassword } = useAuth()
+  const { resetUserPassword } = useAuth()
 
   const handleResetPassword = async (e) => {
     e.preventDefault()
     setIsLoading(true)
     try {
-      await resetPassword(email)
+      await resetUserPassword(email)
       toast({
         title: 'Success',
         description: 'Password reset email sent successfully.',
