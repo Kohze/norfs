@@ -31,7 +31,7 @@ export default function Data() {
           <p className="text-lg leading-7 text-gray-600 mb-6">
             All coordinates are in GRCh38. See our{' '}
             <a
-              href="https://github.com/Kohze/nORF-data-prep"
+              href="https://github.com/Kohze/norfs-data-prep"
               className="text-blue-600 hover:underline"
             >
               GitHub repository
